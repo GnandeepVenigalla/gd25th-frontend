@@ -109,6 +109,14 @@ export const translations: Translations = {
     back: {
         en: "Back",
         te: "వెనుకకు"
+    },
+    startSlideshow: {
+        en: "Start Slideshow",
+        te: "స్లైడ్ షో ప్రారంభించండి"
+    },
+    stopSlideshow: {
+        en: "Stop Slideshow",
+        te: "స్లైడ్ షో ఆపండి"
     }
 };
 

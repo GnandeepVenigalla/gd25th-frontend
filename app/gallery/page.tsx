@@ -24,6 +24,10 @@ export default function GalleryPage() {
     const [activeTab, setActiveTab] = useState<'photos' | 'videos'>('photos');
     const [loading, setLoading] = useState(true);
     const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+    const [isSlideshowActive, setIsSlideshowActive] = useState(false);
+    const [slideshowIndex, setSlideshowIndex] = useState(0);
+
+    const currentMedia = activeTab === 'photos' ? images : videos;
 
     useEffect(() => {
         // Fetch media from backend
@@ -31,15 +35,65 @@ export default function GalleryPage() {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    setImages(data.data.images || []);
-                    setVideos(data.data.videos || []);
+                    // Force chronological sort (oldest first) in case backend is inconsistent
+                    const sortedImages = (data.data.images || []).sort((a: any, b: any) => {
+                        const timeA = parseInt(a.key?.split('-')[0]) || 0;
+                        const timeB = parseInt(b.key?.split('-')[0]) || 0;
+                        return timeA - timeB;
+                    });
+                    const sortedVideos = (data.data.videos || []).sort((a: any, b: any) => {
+                        const timeA = parseInt(a.key?.split('-')[0]) || 0;
+                        const timeB = parseInt(b.key?.split('-')[0]) || 0;
+                        return timeA - timeB;
+                    });
+                    setImages(sortedImages);
+                    setVideos(sortedVideos);
                 }
             })
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
     }, []);
 
-    const currentMedia = activeTab === 'photos' ? images : videos;
+    // Slideshow interval
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isSlideshowActive && selectedMedia) {
+            interval = setInterval(() => {
+                const nextIndex = (slideshowIndex + 1) % currentMedia.length;
+                handleMediaSelect(currentMedia[nextIndex], nextIndex);
+            }, 3000); // 3 seconds per slide
+        }
+        return () => clearInterval(interval);
+    }, [isSlideshowActive, slideshowIndex, currentMedia, selectedMedia]);
+
+    const handleMediaSelect = (item: MediaItem, index: number) => {
+        setSelectedMedia(item);
+        setSlideshowIndex(index);
+    };
+
+    const handleNext = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        const nextIndex = (slideshowIndex + 1) % currentMedia.length;
+        handleMediaSelect(currentMedia[nextIndex], nextIndex);
+    };
+
+    const handlePrev = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        const prevIndex = (slideshowIndex - 1 + currentMedia.length) % currentMedia.length;
+        handleMediaSelect(currentMedia[prevIndex], prevIndex);
+    };
+
+    const toggleSlideshow = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        setIsSlideshowActive(!isSlideshowActive);
+    };
+
+    const startSlideshow = () => {
+        if (currentMedia.length > 0) {
+            handleMediaSelect(currentMedia[0], 0);
+            setIsSlideshowActive(true);
+        }
+    };
 
     return (
         <div className="min-h-screen p-4 sm:p-8 bg-black/95 text-white">
@@ -58,7 +112,17 @@ export default function GalleryPage() {
             {/* Hero Section */}
             <div className="text-center mb-10 sm:mb-16 px-4">
                 <h1 className="text-4xl sm:text-6xl font-extrabold mb-4 tracking-tight leading-[1.3] sm:leading-[1.4] py-2">{t('theGallery')}</h1>
-                <p className="text-gray-500 text-base sm:text-lg max-w-md mx-auto leading-relaxed">{t('gallerySubtitle')}</p>
+                <p className="text-gray-500 text-base sm:text-lg max-w-md mx-auto leading-relaxed mb-8">{t('gallerySubtitle')}</p>
+
+                {currentMedia.length > 0 && (
+                    <button
+                        onClick={startSlideshow}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-yellow-500/20"
+                    >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                        {t('startSlideshow')}
+                    </button>
+                )}
             </div>
 
             {/* Tabs */}
@@ -83,10 +147,10 @@ export default function GalleryPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-7xl mx-auto">
-                    {currentMedia.map((item) => (
+                    {currentMedia.map((item, index) => (
                         <div
                             key={item._id}
-                            onClick={() => setSelectedMedia(item)}
+                            onClick={() => handleMediaSelect(item, index)}
                             className="group relative aspect-video overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 cursor-pointer hover:border-yellow-500/50 transition-all duration-500 shadow-xl"
                         >
                             {activeTab === 'videos' ? (
@@ -122,10 +186,42 @@ export default function GalleryPage() {
 
             {/* Lightbox Modal */}
             {selectedMedia && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/98 backdrop-blur-2xl animate-fade-in" onClick={() => setSelectedMedia(null)}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/98 backdrop-blur-2xl animate-fade-in" onClick={() => {
+                    setSelectedMedia(null);
+                    setIsSlideshowActive(false);
+                }}>
                     <button className="absolute top-4 right-4 sm:top-8 sm:right-8 text-white/50 hover:text-white transition-colors z-[60] bg-black/50 rounded-full p-2">
                         <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
+
+                    {/* Navigation Buttons */}
+                    <button
+                        onClick={handlePrev}
+                        className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 p-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all z-[60]"
+                    >
+                        <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+
+                    <button
+                        onClick={handleNext}
+                        className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 p-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all z-[60]"
+                    >
+                        <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+
+                    {/* Slideshow Controls */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-4 bg-black/50 px-4 py-2 rounded-full border border-white/10">
+                        <button onClick={toggleSlideshow} className="text-yellow-500 hover:text-yellow-400 transition-colors">
+                            {isSlideshowActive ? (
+                                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                            ) : (
+                                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                            )}
+                        </button>
+                        <span className="text-[10px] sm:text-xs font-medium tracking-widest text-gray-400 uppercase">
+                            {slideshowIndex + 1} / {currentMedia.length}
+                        </span>
+                    </div>
 
                     <div className="relative w-full max-w-6xl max-h-[90vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                         {activeTab === 'videos' ? (
@@ -138,12 +234,13 @@ export default function GalleryPage() {
                                 />
                             </div>
                         ) : (
-                            <div className="relative w-full h-[70vh] sm:h-[85vh]">
+                            <div className="relative w-full h-[70vh] sm:h-[85vh] transition-all duration-500">
                                 <Image
                                     src={selectedMedia.url}
                                     alt="Preview"
                                     fill
-                                    className="object-contain shadow-2xl drop-shadow-2xl"
+                                    className="object-contain shadow-2xl drop-shadow-2xl animate-fade-in"
+                                    key={selectedMedia._id}
                                 />
                             </div>
                         )}
