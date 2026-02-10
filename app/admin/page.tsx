@@ -46,7 +46,7 @@ export default function AdminPage() {
         try {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks (more stable)
+                const CHUNK_SIZE = 10 * 1024 * 1024; // Increased to 10MB chunks for efficiency
                 const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
                 setMessage(`Starting upload for ${file.name}...`);
@@ -119,7 +119,13 @@ export default function AdminPage() {
             setMessage(`Successfully uploaded ${files.length} files!`);
             setFiles(null);
         } catch (err: any) {
-            const errorMsg = err.response?.data?.message || err.message || 'Upload failed. Please try again.';
+            let errorMsg = err.response?.data?.message || err.message || 'Upload failed. Please try again.';
+
+            // Specific check for Mixed Content / Network Error on mobile
+            if (typeof window !== 'undefined' && window.location.protocol === 'https:' && API_URL.startsWith('http:')) {
+                errorMsg = "Network Error: You are on a secure site (HTTPS) but trying to connect to an insecure local backend (HTTP). This is blocked by mobile browsers. Please use the server's local IP address with http:// in your browser if you are testing locally.";
+            }
+
             setMessage(errorMsg);
             console.error('Upload Error:', err);
         } finally {
@@ -192,7 +198,7 @@ export default function AdminPage() {
                                     <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                                 <p className="text-sm sm:text-base text-gray-300 font-medium">{t('clickToSelect')}</p>
-                                <p className="text-[10px] sm:text-xs text-gray-500">PNG, JPG, MP4 up to 5GB</p>
+                                <p className="text-[10px] sm:text-xs text-gray-500">PNG, JPG, HEIC, MP4, MOV up to 5GB (Max 100 files at once)</p>
                             </div>
                         </div>
 
