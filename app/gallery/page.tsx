@@ -95,7 +95,7 @@ export default function GalleryPage() {
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center scale-90 group-hover:scale-100 transition-transform drop-shadow-2xl">
                                             <Image
-                                                src="/GDplayer.png"
+                                                src="/gd25th-frontend/GDplayer.png"
                                                 alt="Play"
                                                 width={100}
                                                 height={100}

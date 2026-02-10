@@ -30,7 +30,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen flex flex-col transition-colors duration-300`} suppressHydrationWarning>
         <LanguageProvider>
-          <div className="flex-grow">
+          <div className="flex-grow pb-20">
             {children}
           </div>
           <Footer />

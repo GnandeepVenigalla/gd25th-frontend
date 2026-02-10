@@ -1,14 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'export',
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.amazonaws.com', // Allow all Amazon S3 buckets
+        hostname: '*.amazonaws.com',
       },
     ],
   },
+  basePath: '/gd25th-frontend',
 };
 
 export default nextConfig;

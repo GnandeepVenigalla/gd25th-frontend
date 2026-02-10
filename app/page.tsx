@@ -18,7 +18,7 @@ export default function Home() {
       <section className="text-center animate-fade-in space-y-8 max-w-4xl mx-auto w-full">
         <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto mb-4 sm:mb-8 drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">
           <Image
-            src="/GD25thlogo.png"
+            src="/gd25th-frontend/GD25thlogo.png"
             alt="GD 25th"
             fill
             className="object-contain" // Uses Next.js Image
